@@ -1,0 +1,263 @@
+# === GENERAL ===
+
+[gear]
+type = "detents"
+[gear.xp]
+method = "id"
+incr = "sim/flight_controls/landing_gear_down"
+decr = "sim/flight_controls/landing_gear_up"
+val = "sim/cockpit2/controls/gear_handle_animation"
+[gear.msfs24]
+method = "id_percent"
+incr = "GEAR_DOWN"
+decr = "GEAR_UP"
+val = "GEAR HANDLE POSITION"
+
+[flaps]
+type = "detents"
+[flaps.xp]
+method = "id"
+incr = "sim/flight_controls/flaps_down"
+decr = "sim/flight_controls/flaps_up"
+val = "sim/cockpit2/controls/flap_handle_request_ratio"
+[flaps.msfs24]
+method = "id_frac"
+incr = "FLAPS_INCR"
+decr = "FLAPS_DECR"
+num = "FLAPS HANDLE INDEX"
+denom = "FLAPS NUM HANDLE POSITIONS"
+
+[park_brake]
+type = "toggle"
+[park_brake.xp]
+method = "rw"
+val = "sim/cockpit2/controls/park_brake_value"
+[park_brake.msfs24]
+method = "toggle"
+toggle = "PARKING_BRAKES"
+val = "BRAKE PARKING POSITION"
+
+# === B737 GENERAL ===
+
+[b737_speedbrake]
+type = "lever"
+[b737_speedbrake.xp]
+method = "rw"
+val = "laminar/B738/flt_ctrls/speedbrake_lever"
+[b737_speedbrake.msfs24]
+method = "rw_frac16k"
+val = "SPOILERS HANDLE POSITION"
+
+[b737_antiskid]
+type = "detents"
+[b737_antiskid.xp]
+method = "rw"
+val = "sim/cockpit2/switches/auto_brake_level"
+#todo: b737_antiskid.msfs24
+
+
+# === B737 AUTO PILOT ===
+
+[b737_ap_course_l]
+type = "int"
+[b737_ap_course_l.xp]
+method = "rw"
+val = "sim/cockpit/radios/nav1_obs_degm"
+[b737_ap_course_l.msfs24]
+method = "setter_val_indexed"
+val_i = 1
+val = "NAV OBS"
+set = "VOR1_SET"
+
+[b737_ap_fd_l]
+type = "toggle"
+[b737_ap_fd_l.xp]
+method = "onoff"
+on = "sim/autopilot/fdir_on"
+off = "sim/autopilot/fdir_off"
+val = "laminar/B738/autopilot/capt_fd_cmd_pfd_status"
+[b737_ap_fd_l.msfs24]
+method = "toggle"
+toggle = "TOGGLE_FLIGHT_DIRECTOR"
+val = "AUTOPILOT FLIGHT DIRECTOR ACTIVE"
+
+[b737_ap_at_arm]
+type = "toggle"
+[b737_ap_at_arm.xp]
+method = "onoff"
+on = "sim/autopilot/autothrottle_arm"
+off = "sim/autopilot/autothrottle_hard_off"
+val = "sim/cockpit2/autopilot/autothrottle_arm"
+[b737_ap_at_arm.msfs24]
+method = "toggle"
+toggle = "AUTO_THROTTLE_ARM"
+val = "AUTOPILOT THROTTLE ARM"
+
+[b737_ap_n1]
+type = "toggle"
+[b737_ap_n1.xp]
+method = "toggle"
+toggle = "sim/autopilot/autothrottle_n1epr_toggle"
+val = "laminar/B738/autopilor/n1_status"
+[b737_ap_n1.msfs24]
+method = "on"
+on = "AP_N1_HOLD"
+val = "AUTOPILOT AIRSPEED HOLD"
+
+[b737_ap_speed_toggle]
+type = "toggle"
+[b737_ap_speed_toggle.xp]
+method = "on"
+on = "sim/autopilot/autothrottle_on"
+[b737_ap_speed_toggle.msfs24]
+method = "onoff"
+on = "AP_PANEL_SPEED_ON"
+off = "AP_PANEL_SPEED_OFF"
+
+# todo: speed C/O
+
+[b737_ap_speed]
+type = "int"
+[b737_ap_speed.xp]
+method = "rw"
+val = "laminar/B738/autopilot/airspeed"
+[b737_ap_speed.msfs24]
+method = "setter_indexed"
+val = "AUTOPILOT AIRSPEED HOLD VAR"
+set_i = 0
+set = "AP_SPD_VAR_SET"
+
+# todo: b737_ap_vnav
+
+[b737_ap_spd_intv]
+type = "button"
+[b737_ap_spd_intv.xp]
+method = "button"
+cmd = "sim/autopilot/spd_intv"
+val = "laminar/B738/autopilot/speed_intervene_pos"
+# todo: b737_ap_spd_intv.msfs24
+
+[b737_ap_lvl_chg]
+type = "toggle"
+[b737_ap_lvl_chg.xp]
+method = "on"
+on = "sim/autopilot/level_change"
+val = "laminar/B738/autopilot/lvl_chg_status"
+[b737_ap_lvl_chg.msfs24]
+method = "rw"
+val = "AUTOPILOT FLIGHT LEVEL CHANGE"
+
+[b737_ap_heading]
+type = "int"
+[b737_ap_heading.xp]
+method = "rw"
+val = "sim/cockpit/autopilot/heading_mag"
+[b737_ap_heading.msfs24]
+method = "rw"
+val = "AUTOPILOT HEADING LOCK DIR"
+
+[b737_ap_hdg_sel]
+type = "toggle"
+[b737_ap_hdg_sel.xp]
+method = "toggle"
+toggle = "sim/autopilot/heading"
+val = "sim/cockpit2/autopilot/heading_mode"
+[b737_ap_hdg_sel.msfs24]
+method = "toggle"
+toggle = "AP_PANEL_HEADING_HOLD"
+val = "AUTOPILOT HEADING LOCK"
+
+# todo: b737_ap_lnav
+
+[b737_ap_vor_loc]
+type = "toggle"
+[b737_ap_vor_loc.xp]
+method = "toggle"
+toggle = "sim/autopilot/NAV"
+val = "laminar/B738/autopilot/vorloc_status"
+# todo: b737_ap_vor_loc.msfs24
+
+[b737_ap_app]
+type = "toggle"
+[b737_ap_app.xp]
+method = "toggle"
+toggle = "sim/autopilot/approach"
+val = "laminar/B738/autopilot/app_status"
+[b737_ap_app.msfs24]
+method = "toggle"
+toggle = "AP_APR_HOLD"
+val = "AUTOPILOT APPROACH HOLD"
+
+[b737_ap_altitude]
+type = "int"
+[b737_ap_altitude.xp]
+method = "rw"
+val = "sim/cockpit/autopilot/altitude"
+[b737_ap_altitude.msfs24]
+method = "rw"
+val = "AUTOPILOT ALTITUDE LOCK VAR"
+
+[b737_ap_alt_hld]
+type = "toggle"
+[b737_ap_alt_hld.xp]
+method = "toggle"
+toggle = "sim/autopilot/altitude_hold"
+val = "laminar/B738/autopilot/alt_hld_status"
+[b737_ap_alt_hld.msfs24]
+method = "toggle"
+toggle = "AP_ALT_HOLD"
+val = "AUTOPILOT ALTITUDE LOCK"
+
+[b737_ap_alt_intv]
+type = "button"
+[b737_ap_alt_intv.xp]
+method = "button"
+cmd = "sim/autopilot/alt_intv"
+val = "laminar/B738/autopilot/altitude_intervene_pos"
+# todo: b737_alt_intv.msfs24
+
+[b737_ap_vs]
+type = "toggle"
+[b737_ap_vs.xp]
+method = "toggle"
+toggle = "sim/autopilot/vertical_speed"
+val = "laminar/B738/autopilot/vs_status"
+[b737_ap_vs.msfs24]
+method = "toggle"
+toggle = "AP_PANEL_VS_HOLD"
+val = "AUTOPILOT VERTICAL HOLD"
+
+[b737_ap_vert_speed]
+type = "int"
+[b737_ap_vert_speed.xp]
+method = "rw"
+val = "sim/cockpit/autopilot/vertical_velocity"
+[b737_ap_vert_speed.msfs24]
+method = "rw"
+val = "AUTOPILOT VERTICAL HOLD VAR"
+
+[b737_ap_cmd_a]
+type = "toggle"
+[b737_ap_cmd_a.xp]
+method = "toggle"
+toggle = "sim/autopilot/servos_toggle"
+val = "laminar/B738/autopilot/cmd_a_status"
+[b737_ap_cmd_b.xp]
+method = "toggle"
+toggle = "AP_MASTER"
+val = "AUTOPILOT MASTER"
+
+#todo: b737_ap_cmd_b
+#todo: b737_ap_cws_a
+#todo: b737_ap_cws_b
+
+[b737_ap_course_r]
+type = "int"
+[b737_ap_course_r.xp]
+method = "rw"
+val = "sim/cockpit/radios/nav2_obs_degm"
+[b737_ap_course_r.msfs24]
+method = "setter_val_indexed"
+val_i = 2
+val = "NAV OBS"
+set = "VOR2_SET"

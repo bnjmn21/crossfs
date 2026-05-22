@@ -1,0 +1,13 @@
+[package]
+name = "crossfs_xplane"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+xplm = "0.4.2"
+ipc-channel = { workspace = true }
+xplm-sys = "0.5.1"
+crossfs = { path = "../crossfs" }
