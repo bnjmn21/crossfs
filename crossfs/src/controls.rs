@@ -32,7 +32,7 @@ pub struct Primary {
     pub yoke_heading: f32,
 
     /// -1..0 = Reverse, 0..1 = Normal
-    pub throttle_jet: [f32; 4],
+    pub throttle: [f32; 4],
 }
 
 impl Primary {
@@ -50,11 +50,11 @@ impl Primary {
             yoke_pitch: lerp(prev.yoke_pitch, self.yoke_pitch, t),
             yoke_roll: lerp(prev.yoke_roll, self.yoke_roll, t),
             yoke_heading: lerp(prev.yoke_heading, self.yoke_heading, t),
-            throttle_jet: [
-                lerp(prev.throttle_jet[0], self.throttle_jet[0], t),
-                lerp(prev.throttle_jet[1], self.throttle_jet[1], t),
-                lerp(prev.throttle_jet[2], self.throttle_jet[2], t),
-                lerp(prev.throttle_jet[3], self.throttle_jet[3], t),
+            throttle: [
+                lerp(prev.throttle[0], self.throttle[0], t),
+                lerp(prev.throttle[1], self.throttle[1], t),
+                lerp(prev.throttle[2], self.throttle[2], t),
+                lerp(prev.throttle[3], self.throttle[3], t),
             ],
         }
     }

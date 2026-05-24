@@ -67,12 +67,13 @@ impl FlightLoopCallback for CrossFsFlightLoop {
                         self.primary_datarefs.enable_physics();
                     }
                 }
-                Ok(ToXPlane::UpdatePrimary(data)) => {
+                Ok(ToXPlane::SetPrimary(data)) => {
                     self.primary_datarefs.set(data);
                 }
                 Err(TryRecvError::Empty) => {}
                 Err(TryRecvError::IpcError(IpcError::Disconnected)) => {
                     self.connection.take();
+                    self.primary_datarefs.enable_physics();
                     return;
                 }
                 Err(TryRecvError::IpcError(err)) => {
@@ -112,9 +113,7 @@ impl FlightLoopCallback for CrossFsFlightLoop {
     }
 }
 
-struct CrossFsPlugin {
-    flight_loop: FlightLoop,
-}
+struct CrossFsPlugin;
 
 impl Plugin for CrossFsPlugin {
     type Error = std::convert::Infallible;
@@ -126,7 +125,7 @@ impl Plugin for CrossFsPlugin {
             debugln!("==== CROSSFS PANIC ====");
             debugln!("{:?}: {:?}", i.location(), i.payload_as_str());
         }));
-        Ok(CrossFsPlugin { flight_loop })
+        Ok(CrossFsPlugin)
     }
 
     fn enable(&mut self) -> Result<(), Self::Error> {
@@ -243,7 +242,7 @@ impl PrimaryDataRefs {
         self.yoke_pitch_ratio.set(data.yoke_pitch);
         self.yoke_heading_ratio.set(data.yoke_heading);
         self.yoke_roll_ratio.set(data.yoke_roll);
-        self.throttle_jet_rev_ratio.set(&data.throttle_jet);
+        self.throttle_jet_rev_ratio.set(&data.throttle);
     }
 
     fn get(&self) -> Primary {
@@ -273,7 +272,7 @@ impl PrimaryDataRefs {
             yoke_pitch: self.yoke_pitch_ratio.get(),
             yoke_roll: self.yoke_roll_ratio.get(),
             yoke_heading: self.yoke_heading_ratio.get(),
-            throttle_jet,
+            throttle: throttle_jet,
         }
     }
 }

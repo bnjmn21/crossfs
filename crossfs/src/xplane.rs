@@ -10,32 +10,96 @@ use ipc_channel::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{FromUi, Mode, ToUi, config_dir, controls::Primary};
+use crate::{Error, Mode, SimBackend, config_dir, controls::Primary};
 
-pub struct XPlaneAdapter {
-    pub server_thread: JoinHandle<()>,
-    pub to_ui: Receiver<ToUi>,
-    pub from_ui: Sender<FromUi>,
+pub struct XPlaneSim {
+    from_server: Receiver<FromXPlaneServer>,
+    to_server: Sender<ToXPlaneServer>,
+    current_primary: Primary,
+    is_connected: bool,
 }
 
-impl XPlaneAdapter {
+impl XPlaneSim {
     pub fn new() -> Self {
-        let (to_ui_send, to_ui_recv) = channel();
-        let (from_ui_send, from_ui_recv) = channel();
+        let (to_ui_send, from_server_recv) = channel();
+        let (to_server_send, from_ui_recv) = channel();
+        create_server(to_ui_send, from_ui_recv);
         Self {
-            to_ui: to_ui_recv,
-            from_ui: from_ui_send,
-            server_thread: create_server(to_ui_send, from_ui_recv),
+            from_server: from_server_recv,
+            to_server: to_server_send,
+            current_primary: Primary::default(),
+            is_connected: false,
         }
     }
 
-    pub fn disconnect(&mut self) {}
+    fn handle_from_server(&mut self) -> Result<(), Error> {
+        loop {
+            match self.from_server.try_recv() {
+                Ok(FromXPlaneServer::Connected) => {
+                    self.is_connected = true;
+                }
+                Ok(FromXPlaneServer::Disconnected) => {
+                    self.is_connected = false;
+                    return Err(Error::Disconnected);
+                }
+                Ok(FromXPlaneServer::Primary(primary)) => {
+                    self.current_primary = primary;
+                }
+                Err(TryRecvError::Disconnected) => {
+                    panic!("X-Plane server stopped without sending disconnect message");
+                }
+                Err(TryRecvError::Empty) => return Ok(()),
+            }
+        }
+    }
 }
 
-impl Default for XPlaneAdapter {
+impl SimBackend for XPlaneSim {
+    fn disconnect(self) {
+        self.to_server.send(ToXPlaneServer::Disconnect).unwrap();
+    }
+
+    fn set_mode(&mut self, mode: Mode) -> Result<(), Error> {
+        self.handle_from_server()?;
+        self.to_server.send(ToXPlaneServer::SetMode(mode)).unwrap();
+        Ok(())
+    }
+
+    fn set_primary(&mut self, primary: Primary) -> Result<(), Error> {
+        self.handle_from_server()?;
+        self.to_server
+            .send(ToXPlaneServer::SetPrimary(primary))
+            .unwrap();
+        Ok(())
+    }
+
+    fn read_primary(&mut self) -> Result<Primary, Error> {
+        self.handle_from_server()?;
+        Ok(self.current_primary.clone())
+    }
+
+    fn ready(&mut self) -> Result<bool, Error> {
+        self.handle_from_server()?;
+        Ok(self.is_connected)
+    }
+}
+
+impl Default for XPlaneSim {
     fn default() -> Self {
         Self::new()
     }
+}
+
+enum ToXPlaneServer {
+    SetPrimary(Primary),
+    SetMode(Mode),
+    Disconnect,
+}
+
+enum FromXPlaneServer {
+    Connected,
+    Disconnected,
+    Primary(Primary),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -53,7 +117,7 @@ impl ChannelServerSide {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ToXPlane {
     SetMode(Mode),
-    UpdatePrimary(Primary),
+    SetPrimary(Primary),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -61,15 +125,17 @@ pub enum FromXPlane {
     Primary(Primary),
 }
 
-pub fn create_server(to_ui: Sender<ToUi>, from_ui: Receiver<FromUi>) -> JoinHandle<()> {
+fn create_server(
+    from_server: Sender<FromXPlaneServer>,
+    to_server: Receiver<ToXPlaneServer>,
+) -> JoinHandle<()> {
     thread::spawn(|| {
-        to_ui.send(ToUi::SimLoading).unwrap();
         let (server, name) = IpcOneShotServer::<ChannelServerSide>::new().unwrap();
         store_server_name(&name);
         let (_server_recv, channels) = server.accept().unwrap();
         Server {
-            to_ui,
-            from_ui,
+            from_server,
+            to_server,
             to_xplane: channels.to_xplane,
             from_xplane: channels.from_xplane,
         }
@@ -78,25 +144,29 @@ pub fn create_server(to_ui: Sender<ToUi>, from_ui: Receiver<FromUi>) -> JoinHand
 }
 
 pub struct Server {
-    to_ui: Sender<ToUi>,
-    from_ui: Receiver<FromUi>,
+    from_server: Sender<FromXPlaneServer>,
+    to_server: Receiver<ToXPlaneServer>,
     to_xplane: IpcSender<ToXPlane>,
     from_xplane: IpcReceiver<FromXPlane>,
 }
 
 impl Server {
     pub fn main_loop(self) {
-        self.to_ui.send(ToUi::SimConnected).unwrap();
+        self.from_server.send(FromXPlaneServer::Connected).unwrap();
         self.to_xplane
             .send(ToXPlane::SetMode(Mode::Master))
             .unwrap();
-        let mut primary = Primary::default();
         loop {
             match self.from_xplane.try_recv() {
-                Ok(FromXPlane::Primary(new_primary)) => primary = new_primary,
+                Ok(FromXPlane::Primary(primary)) => self
+                    .from_server
+                    .send(FromXPlaneServer::Primary(primary))
+                    .unwrap(),
                 Err(ipc_channel::TryRecvError::IpcError(IpcError::Disconnected)) => {
                     delete_server_name();
-                    self.to_ui.send(ToUi::SimDisconnected).unwrap();
+                    self.from_server
+                        .send(FromXPlaneServer::Disconnected)
+                        .unwrap();
                     return;
                 }
                 Err(ipc_channel::TryRecvError::Empty) => {}
@@ -104,24 +174,22 @@ impl Server {
                     panic!("Error: {err}");
                 }
             }
-            match self.from_ui.try_recv() {
-                Ok(FromUi::SimDisconnect) => {
+            match self.to_server.try_recv() {
+                Ok(ToXPlaneServer::Disconnect) => {
                     delete_server_name();
                     return;
+                }
+                Ok(ToXPlaneServer::SetMode(mode)) => {
+                    self.to_xplane.send(ToXPlane::SetMode(mode)).unwrap();
+                }
+                Ok(ToXPlaneServer::SetPrimary(primary)) => {
+                    self.to_xplane.send(ToXPlane::SetPrimary(primary)).unwrap();
                 }
                 Err(TryRecvError::Empty) => {}
                 Err(err) => {
                     panic!("Error: {err}");
                 }
             }
-            self.to_ui
-                .send(ToUi::Info(crate::Info {
-                    mode: Mode::Master,
-                    lat: primary.lat,
-                    long: primary.long,
-                    altitude: primary.alt,
-                }))
-                .unwrap();
         }
     }
 }
