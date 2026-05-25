@@ -60,6 +60,7 @@ fn main() -> ExitCode {
                 &format!("127.0.0.1:{}", args.serve_port),
                 password,
                 args.master,
+                args.vertical_offset,
             );
         }
         (true, false) => {
@@ -90,6 +91,7 @@ fn main() -> ExitCode {
                 &args.address.unwrap(),
                 args.password.unwrap(),
                 args.master,
+                args.vertical_offset,
             );
         }
         (false, false) => unreachable!(),
@@ -98,7 +100,7 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn client(sim_type: SimType, addr: &str, password: u64, master: bool) {
+fn client(sim_type: SimType, addr: &str, password: u64, master: bool, vertical_offset: f32) {
     println!("Starting client...");
     let tcp_client = Client::new(addr, password, master).unwrap();
     println!("Connected to server.");
@@ -106,7 +108,7 @@ fn client(sim_type: SimType, addr: &str, password: u64, master: bool) {
         SimType::XPlane => Box::new(XPlaneSim::new()),
         SimType::Msfs => Box::new(MsfsSim::new().unwrap()),
     };
-    let mut crossfs = CrossFs::new(sim, tcp_client, master);
+    let mut crossfs = CrossFs::new(sim, tcp_client, master, vertical_offset);
     loop {
         crossfs.tick().unwrap();
         thread::sleep(TICK_INTERVAL);
@@ -167,4 +169,7 @@ struct Cli {
     /// The port the server should use
     #[arg(long, default_value = "26000")]
     serve_port: u16,
+    /// Vertical offset of your aircraft in meters
+    #[arg(long, default_value = "0")]
+    vertical_offset: f32,
 }

@@ -34,10 +34,16 @@ pub struct CrossFs {
     master: bool,
     first_packet_recieved: Option<Instant>,
     server_mode_set: bool,
+    vertical_offset: f32,
 }
 
 impl CrossFs {
-    pub fn new(mut sim: Box<dyn SimBackend>, mut tcp_client: Client, master: bool) -> Self {
+    pub fn new(
+        mut sim: Box<dyn SimBackend>,
+        mut tcp_client: Client,
+        master: bool,
+        vertical_offset: f32,
+    ) -> Self {
         let (tcp_send, send) = channel();
         let (recv, tcp_recv) = channel();
         thread::spawn(move || tcp_client.run(send, recv));
@@ -68,6 +74,7 @@ impl CrossFs {
             master,
             first_packet_recieved: None,
             server_mode_set: false,
+            vertical_offset,
         }
     }
 
@@ -82,7 +89,8 @@ impl CrossFs {
 
     fn tick_master(&mut self) -> Result<(), Error> {
         if Instant::now() - self.last_send > SEND_PRIMARY_INTERVAL {
-            let primary = self.sim.read_primary()?;
+            let mut primary = self.sim.read_primary()?;
+            primary.alt -= self.vertical_offset as f64;
             self.tcp_send
                 .send(ToServerPacket::Primary(primary))
                 .unwrap();
@@ -95,7 +103,8 @@ impl CrossFs {
         while let Ok(packet) = self.tcp_recv.try_recv() {
             #[allow(clippy::single_match, reason = "will add more packets later")]
             match packet {
-                FromServerPacket::Primary(primary) => {
+                FromServerPacket::Primary(mut primary) => {
+                    primary.alt += self.vertical_offset as f64;
                     let now = Instant::now();
                     self.previous_primary_recv = self.get_interpolated();
                     self.current_primary_recv = primary;
